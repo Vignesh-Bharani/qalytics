@@ -2,6 +2,10 @@
 
 A comprehensive quality analytics platform for tracking testing metrics across hierarchical PnL (Profit and Loss) structures.
 
+## 📂 Repository
+
+**GitHub**: [https://github.com/Vignesh-Bharani/qalytics](https://github.com/Vignesh-Bharani/qalytics)
+
 ## 🚀 How to Run This App Locally
 
 ### Prerequisites
@@ -12,7 +16,7 @@ A comprehensive quality analytics platform for tracking testing metrics across h
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Vignesh-Bharani/qalytics.git
    cd qalytics
    ```
 
