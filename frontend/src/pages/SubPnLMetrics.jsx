@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import api from '../services/api';
+import api, { metricsHistoryAPI } from '../services/api';
 import { 
   ArrowLeft, 
   Edit3, 
@@ -19,7 +19,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Plus,
-  History
+  History,
+  Trash2,
+  Calendar,
+  User as UserIcon
 } from 'lucide-react';
 
 // Define components outside the main component to prevent re-creation
@@ -118,6 +121,8 @@ const SubPnLMetrics = () => {
   const [activeTab, setActiveTab] = useState('metrics');
   const [history, setHistory] = useState([]);
   const [subPnlDetails, setSubPnlDetails] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   // Load all data on component mount
   useEffect(() => {
@@ -216,6 +221,25 @@ const SubPnLMetrics = () => {
       [field]: value === '' ? '' : (parseFloat(value) || 0)
     }));
   }, []);
+
+  const handleDeleteHistory = async (historyId) => {
+    try {
+      setDeletingId(historyId);
+      await metricsHistoryAPI.delete(historyId);
+      
+      // Remove the deleted item from the local state
+      setHistory(prevHistory => prevHistory.filter(item => item.id !== historyId));
+      setDeleteConfirmId(null);
+      
+      // Show success message (optional)
+      alert('History entry deleted successfully');
+    } catch (err) {
+      console.error('Error deleting history:', err);
+      alert('Failed to delete history entry. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const calculateDerivedMetrics = () => {
     const bugBasedCoverage = metrics.total_bugs_logged > 0 
@@ -563,8 +587,45 @@ const SubPnLMetrics = () => {
                             </span>
                           </div>
                           
-                          <div className="text-sm text-gray-500">
-                            {new Date(item.created_at).toLocaleString()}
+                          <div className="flex items-center space-x-3">
+                            <div className="text-sm text-gray-500">
+                              {new Date(item.created_at).toLocaleString()}
+                            </div>
+                            
+                            {/* Delete button */}
+                            {deleteConfirmId === item.id ? (
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleDeleteHistory(item.id)}
+                                  disabled={deletingId === item.id}
+                                  className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                                >
+                                  {deletingId === item.id ? (
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b border-red-700"></div>
+                                  ) : (
+                                    <>
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      Confirm
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  disabled={deletingId === item.id}
+                                  className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setDeleteConfirmId(item.id)}
+                                className="inline-flex items-center p-1 border border-transparent rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                title="Delete history entry"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
                         

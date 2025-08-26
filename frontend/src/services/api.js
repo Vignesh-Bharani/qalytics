@@ -68,4 +68,13 @@ export const subPnlAPI = {
   updateDetailMetrics: (id, data) => api.put(`/sub-pnls/${id}/detail-metrics`, data),
 };
 
+// Metrics History API
+export const metricsHistoryAPI = {
+  getAll: (params = {}) => api.get('/metrics-history', { params }),
+  getBySubPnL: (subPnlId) => api.get(`/sub-pnls/${subPnlId}/metrics-history`),
+  getByPnL: (pnlId) => api.get(`/pnls/${pnlId}/metrics-history`),
+  getById: (id) => api.get(`/metrics-history/${id}`),
+  delete: (id) => api.delete(`/metrics-history/${id}`),
+};
+
 export default api;

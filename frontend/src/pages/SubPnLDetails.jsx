@@ -22,7 +22,8 @@ import {
   Tag,
   Edit,
   Save,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 
 const SubPnLDetails = () => {
@@ -35,6 +36,8 @@ const SubPnLDetails = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editingMetrics, setEditingMetrics] = useState({});
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   useEffect(() => {
     if (subPnlId) {
@@ -121,6 +124,24 @@ const SubPnLDetails = () => {
     }
   };
 
+  const handleDeleteHistory = async (historyId) => {
+    try {
+      setDeletingId(historyId);
+      await metricsHistoryAPI.delete(historyId);
+      
+      // Remove the deleted item from the local state
+      setMetricsHistory(prevHistory => prevHistory.filter(item => item.id !== historyId));
+      setDeleteConfirmId(null);
+      
+      // Show success message (optional)
+      alert('History entry deleted successfully');
+    } catch (err) {
+      console.error('Error deleting history:', err);
+      alert('Failed to delete history entry. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
