@@ -173,7 +173,7 @@ const PnLs = () => {
                     <span className="text-xs font-medium">Test Cases</span>
                   </div>
                   <p className="text-lg font-bold text-gray-900">
-                    {pnl.metrics?.escaped_bugs || 0}
+                    {pnl.metrics?.total_testcases_executed || 0}
                   </p>
                 </div>
                 <div className="text-center">
@@ -191,7 +191,7 @@ const PnLs = () => {
                     <span className="text-xs font-medium">Automation</span>
                   </div>
                   <p className="text-lg font-bold text-gray-900">
-                    {pnl.metrics?.automation_coverage_percent || 0}%
+                    {pnl.metrics?.automation_coverage_percent ? Math.round(pnl.metrics.automation_coverage_percent) : 0}%
                   </p>
                 </div>
                 <div className="text-center">
@@ -200,7 +200,7 @@ const PnLs = () => {
                     <span className="text-xs font-medium">Prod Bugs</span>
                   </div>
                   <p className="text-lg font-bold text-gray-900">
-                    {pnl.metrics?.prod_bugs || 0}
+                    {pnl.metrics?.escaped_bugs || 0}
                   </p>
                 </div>
               </div>
