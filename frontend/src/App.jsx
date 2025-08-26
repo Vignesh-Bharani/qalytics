@@ -9,6 +9,7 @@ import PnLs from './pages/PnLs'
 import PnLDetails from './pages/PnLDetails'
 import SubPnLs from './pages/SubPnLs'
 import SubPnLDetails from './pages/SubPnLDetails'
+import SubPnLMetrics from './pages/SubPnLMetrics'
 import MetricsHistory from './pages/MetricsHistory'
 
 // Protected Route wrapper
@@ -78,6 +79,7 @@ function AppRoutes() {
         <Route path="pnls/:pnlId" element={<PnLDetails />} />
         <Route path="pnls/:pnlId/sub-pnls" element={<SubPnLs />} />
         <Route path="sub-pnl-details/:subPnlId" element={<SubPnLDetails />} />
+        <Route path="sub-pnls/:subPnlId/metrics" element={<SubPnLMetrics />} />
         <Route path="metrics-history" element={<MetricsHistory />} />
         <Route path="pnls/:pnlId/metrics-history" element={<MetricsHistory />} />
         <Route path="sub-pnls/:subPnlId/metrics-history" element={<MetricsHistory />} />

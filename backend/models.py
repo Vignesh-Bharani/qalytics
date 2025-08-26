@@ -24,7 +24,6 @@ class PnL(Base):
     
     # Relationships
     sub_pnls = relationship("SubPnL", back_populates="pnl", cascade="all, delete-orphan")
-    pnl_metrics = relationship("PnLMetrics", back_populates="pnl", cascade="all, delete-orphan")
 
 class SubPnL(Base):
     __tablename__ = "sub_pnls"
@@ -41,23 +40,6 @@ class SubPnL(Base):
     sub_pnl_metrics = relationship("SubPnLMetrics", back_populates="sub_pnl", cascade="all, delete-orphan")
     sub_pnl_detail_metrics = relationship("SubPnLDetailMetrics", back_populates="sub_pnl", cascade="all, delete-orphan")
 
-# PnL level metrics (Dashboard level)
-class PnLMetrics(Base):
-    __tablename__ = "pnl_metrics"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    pnl_id = Column(Integer, ForeignKey("pnls.id", ondelete="CASCADE"), nullable=False)
-    total_testcases = Column(Integer, default=0)
-    test_coverage_percent = Column(DECIMAL(5,2), default=0.0)
-    automation_percent = Column(DECIMAL(5,2), default=0.0)
-    lower_env_bugs = Column(Integer, default=0)
-    prod_bugs = Column(Integer, default=0)
-    testcases_per_bug = Column(DECIMAL(5,2), default=0.0)
-    bugs_per_100_tests = Column(DECIMAL(5,2), default=0.0)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
-    # Relationships
-    pnl = relationship("PnL", back_populates="pnl_metrics")
 
 # Sub-PnL level metrics (Sub-PnL page level)
 class SubPnLMetrics(Base):
@@ -118,7 +100,7 @@ class MetricsHistory(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Reference fields
-    entity_type = Column(String(50), nullable=False)  # 'pnl', 'sub_pnl', 'sub_pnl_detail'
+    entity_type = Column(String(50), nullable=False)  # 'sub_pnl', 'sub_pnl_detail'
     entity_id = Column(Integer, nullable=False)  # References the specific entity
     
     # Snapshot of metrics at time of change

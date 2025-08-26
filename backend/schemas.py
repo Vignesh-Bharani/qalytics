@@ -60,27 +60,6 @@ class SubPnLOut(SubPnLBase):
     class Config:
         from_attributes = True
 
-# PnL Metrics schemas
-class PnLMetricsBase(BaseModel):
-    total_testcases: int = 0
-    test_coverage_percent: float = 0.0
-    automation_percent: float = 0.0
-    lower_env_bugs: int = 0
-    prod_bugs: int = 0
-
-class PnLMetricsCreate(PnLMetricsBase):
-    pass
-
-class PnLMetricsUpdate(PnLMetricsBase):
-    pass
-
-class PnLMetricsOut(PnLMetricsBase):
-    id: int
-    pnl_id: int
-    updated_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 # Sub PnL Metrics schemas
 class SubPnLMetricsBase(BaseModel):
@@ -133,13 +112,13 @@ class SubPnLDetailMetricsOut(SubPnLDetailMetricsBase):
         from_attributes = True
 
 # Dashboard response schemas
-class PnLWithMetrics(BaseModel):
+class PnLWithSubPnLs(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    metrics: Optional[PnLMetricsOut] = None
+    sub_pnls_count: int = 0
     
     class Config:
         from_attributes = True

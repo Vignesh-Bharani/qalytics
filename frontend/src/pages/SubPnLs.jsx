@@ -208,7 +208,7 @@ const SubPnLs = () => {
                   </div>
                 </div>
                 
-                <div className="pt-4 border-t border-gray-200">
+                <div className="pt-4 border-t border-gray-200 space-y-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -219,6 +219,22 @@ const SubPnLs = () => {
                     }}
                   >
                     View Detailed Metrics →
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/sub-pnls/${subPnl.id}/metrics`, {
+                        state: { 
+                          subPnlName: subPnl.name,
+                          pnlName: pnl?.name 
+                        }
+                      });
+                    }}
+                  >
+                    🎯 Manage Metrics
                   </Button>
                 </div>
               </Card>

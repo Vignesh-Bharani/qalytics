@@ -16,20 +16,13 @@ export default function Login() {
     setError('')
     setIsLoading(true)
 
-    console.log('Login form submitted with:', { email, password });
-
     try {
-      console.log('Calling authAPI.login...');
       const response = await authAPI.login({ email, password });
-      
-      console.log('Login response:', response);
       const { access_token, user } = response.data;
       
       // Use the auth context to handle login
       login(access_token, user);
-      
-      console.log('Login successful, redirecting...');
-      
+
       // Navigate to dashboard
       navigate('/dashboard');
       
@@ -40,15 +33,12 @@ export default function Login() {
       
       if (err.response) {
         // Server responded with error
-        console.log('Server error response:', err.response);
         errorMessage = err.response.data?.detail || `Server error: ${err.response.status}`;
       } else if (err.request) {
         // Network error
-        console.log('Network error:', err.request);
         errorMessage = 'Network error. Please check your connection.';
       } else {
         // Other error
-        console.log('Other error:', err.message);
         errorMessage = err.message;
       }
       
@@ -120,12 +110,6 @@ export default function Login() {
 
         <div className="mt-6 text-center text-sm text-gray-500">
           Test credentials: test@qalytics.com / password123
-        </div>
-
-        {/* Debug info - remove in production */}
-        <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
-          <div>API URL: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}</div>
-          <div>Check browser console for detailed logs</div>
         </div>
       </div>
     </div>

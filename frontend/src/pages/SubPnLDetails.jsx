@@ -9,9 +9,6 @@ import {
   Package, 
   ChevronRight, 
   ChevronLeft, 
-  Edit, 
-  Save, 
-  X, 
   TestTube, 
   Bug, 
   Clock, 
@@ -22,7 +19,10 @@ import {
   History,
   Calendar,
   User,
-  Tag
+  Tag,
+  Edit,
+  Save,
+  X
 } from 'lucide-react';
 
 const SubPnLDetails = () => {
@@ -31,11 +31,10 @@ const SubPnLDetails = () => {
   const [subPnl, setSubPnl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editing, setEditing] = useState(false);
-  const [editingMetrics, setEditingMetrics] = useState({});
-  const [saving, setSaving] = useState(false);
   const [metricsHistory, setMetricsHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editingMetrics, setEditingMetrics] = useState({});
 
   useEffect(() => {
     if (subPnlId) {
@@ -47,14 +46,27 @@ const SubPnLDetails = () => {
   const fetchSubPnLDetails = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
+      
       const response = await subPnlAPI.getById(subPnlId);
-      setSubPnl(response.data);
-      if (response.data.detail_metrics) {
-        setEditingMetrics(response.data.detail_metrics);
+      
+      if (response.data) {
+        setSubPnl(response.data);
+      } else {
+        setError('No data received from server');
       }
     } catch (err) {
-      setError('Failed to fetch Sub-PnL details');
-      console.error('Sub-PnL details error:', err);
+      
+      if (err.response) {
+        // Server responded with error status
+        setError(`Server Error (${err.response.status}): ${err.response.data?.detail || err.response.statusText}`);
+      } else if (err.request) {
+        // Request was made but no response received
+        setError('No response from server. Please check if the backend is running on http://localhost:8000');
+      } else {
+        // Something else happened
+        setError(`Error: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,46 +76,51 @@ const SubPnLDetails = () => {
     try {
       setHistoryLoading(true);
       const response = await api.get(`/sub-pnls/${subPnlId}/metrics-history`);
-      setMetricsHistory(response.data);
+      setMetricsHistory(response.data || []);
     } catch (err) {
-      console.error('Failed to fetch metrics history:', err);
+      setMetricsHistory([]); // Set empty array on error
     } finally {
       setHistoryLoading(false);
     }
   };
 
-  const handleEdit = () => {
-    setEditing(true);
-  };
-
-  const handleCancel = () => {
-    setEditing(false);
-    if (subPnl?.detail_metrics) {
-      setEditingMetrics(subPnl.detail_metrics);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      await subPnlAPI.updateDetailMetrics(subPnlId, editingMetrics);
+  const handleEditToggle = () => {
+    if (editing) {
       setEditing(false);
-      await fetchSubPnLDetails(); // Refresh data
-      await fetchMetricsHistory(); // Refresh history after save
-    } catch (err) {
-      console.error('Failed to save metrics:', err);
-      alert('Failed to save metrics. Please try again.');
-    } finally {
-      setSaving(false);
+      setEditingMetrics({});
+    } else {
+      setEditing(true);
+      setEditingMetrics({ ...subPnl?.detail_metrics });
     }
   };
 
-  const handleMetricChange = (field, value) => {
+  const handleMetricChange = (key, value) => {
     setEditingMetrics(prev => ({
       ...prev,
-      [field]: value
+      [key]: value
     }));
   };
+
+  const handleSaveMetrics = async () => {
+    try {
+      const response = await api.put(`/sub-pnls/${subPnlId}/detail-metrics`, editingMetrics);
+      
+      // Update the subPnl state with new metrics
+      setSubPnl(prev => ({
+        ...prev,
+        detail_metrics: response.data
+      }));
+      
+      setEditing(false);
+      setEditingMetrics({});
+      
+      // Refresh metrics history
+      fetchMetricsHistory();
+    } catch (err) {
+      alert('Failed to update metrics. Please try again.');
+    }
+  };
+
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -142,21 +159,32 @@ const SubPnLDetails = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-900"></div>
+        <p className="text-gray-600">Loading Sub-PnL details for ID: {subPnlId}...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <p className="text-red-800">{error}</p>
-        <div className="mt-4 flex space-x-2">
-          <Button onClick={fetchSubPnLDetails}>Retry</Button>
-          <Button variant="outline" onClick={() => navigate('/dashboard')}>
-            Back to Dashboard
-          </Button>
+      <div className="max-w-2xl mx-auto mt-8">
+        <div className="bg-red-50 border border-red-200 rounded-md p-6">
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading Sub-PnL Details</h2>
+          <p className="text-red-700 mb-4">{error}</p>
+          
+          
+          <div className="flex space-x-3">
+            <Button onClick={fetchSubPnLDetails} className="bg-red-600 hover:bg-red-700 text-white">
+              Retry Loading
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard')}>
+              Back to Dashboard
+            </Button>
+            <Button variant="outline" onClick={() => window.open('http://localhost:8000/docs', '_blank')}>
+              Check API Docs
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -185,6 +213,7 @@ const SubPnLDetails = () => {
         <span className="text-gray-900 font-medium">{subPnl?.name}</span>
       </div>
 
+
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -209,38 +238,22 @@ const SubPnLDetails = () => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline"
-            onClick={() => navigate(`/sub-pnls/${subPnlId}/metrics-history`)}
-            className="flex items-center space-x-2"
-          >
-            <History className="h-4 w-4" />
-            <span>Metrics History</span>
-          </Button>
-          {!editing ? (
-            <Button onClick={handleEdit} className="flex items-center space-x-2">
-              <Edit className="h-4 w-4" />
-              <span>Edit Metrics</span>
-            </Button>
-          ) : (
-            <div className="flex space-x-2">
-              <Button 
-                onClick={handleSave} 
-                disabled={saving}
-                className="flex items-center space-x-2"
-              >
+          {editing ? (
+            <>
+              <Button onClick={handleSaveMetrics} className="flex items-center space-x-1">
                 <Save className="h-4 w-4" />
-                <span>{saving ? 'Saving...' : 'Save'}</span>
+                <span>Save Changes</span>
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleCancel}
-                className="flex items-center space-x-2"
-              >
+              <Button variant="outline" onClick={handleEditToggle} className="flex items-center space-x-1">
                 <X className="h-4 w-4" />
                 <span>Cancel</span>
               </Button>
-            </div>
+            </>
+          ) : (
+            <Button onClick={handleEditToggle} className="flex items-center space-x-1">
+              <Edit className="h-4 w-4" />
+              <span>Edit Metrics</span>
+            </Button>
           )}
         </div>
       </div>
@@ -527,16 +540,6 @@ const SubPnLDetails = () => {
         )}
       </Card>
 
-      {/* Navigation Flow Info */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
-        <div className="flex items-center space-x-2 text-sm text-blue-700">
-          <span className="bg-blue-100 px-2 py-1 rounded">Dashboard</span>
-          <ChevronRight className="h-4 w-4" />
-          <span className="bg-blue-100 px-2 py-1 rounded">Sub-PnL List</span>
-          <ChevronRight className="h-4 w-4" />
-          <span className="bg-blue-200 px-2 py-1 rounded font-medium">Sub-PnL Details</span>
-        </div>
-      </Card>
     </div>
   );
 };

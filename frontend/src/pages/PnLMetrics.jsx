@@ -37,7 +37,6 @@ const PnLMetrics = () => {
 
   const fetchMetrics = async () => {
     try {
-      // TODO: Replace with actual API call
       const emptyMetrics = {
         features_shipped: 0,
         total_testcases_executed: 0,
@@ -70,7 +69,6 @@ const PnLMetrics = () => {
   };
 
   const handleSave = async () => {
-    // TODO: API call to save metrics
     setMetrics({ ...formData, updated_at: new Date().toISOString() });
     setIsEditing(false);
   };

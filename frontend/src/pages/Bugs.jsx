@@ -24,10 +24,6 @@ const Bugs = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      // TODO: Replace with actual API calls
-      // const bugsData = await bugsAPI.getAllBugs();
-      // const pnlsData = await pnlAPI.getAllPnls();
       // const releasesData = await releaseAPI.getAllReleases();
       
       // Initialize with empty data
