@@ -80,6 +80,60 @@ def create_metrics_history(db: Session, entity_type: str, entity_id: int,
     except Exception as e:
         raise e
 
+def update_pnl_aggregated_metrics(db: Session, pnl_id: int):
+    """Helper function to recalculate and update PnL metrics from Sub-PnLs"""
+    try:
+        # Get all Sub-PnLs for this PnL with their metrics
+        sub_pnls_with_metrics = db.query(models.SubPnL).filter(
+            models.SubPnL.pnl_id == pnl_id
+        ).options(joinedload(models.SubPnL.sub_pnl_metrics)).all()
+        
+        # Aggregate metrics
+        total_features = sum([sub_pnl.sub_pnl_metrics[0].features_shipped if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        total_testcases = sum([sub_pnl.sub_pnl_metrics[0].total_testcases_executed if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        total_bugs = sum([sub_pnl.sub_pnl_metrics[0].total_bugs_logged if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        total_regression_bugs = sum([sub_pnl.sub_pnl_metrics[0].regression_bugs_found if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        total_escaped_bugs = sum([sub_pnl.sub_pnl_metrics[0].escaped_bugs if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        
+        # Calculate averages
+        sub_pnl_count = len([sub_pnl for sub_pnl in sub_pnls_with_metrics if sub_pnl.sub_pnl_metrics])
+        avg_sanity_time = sum([sub_pnl.sub_pnl_metrics[0].sanity_time_avg_hours if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics]) / max(sub_pnl_count, 1)
+        avg_automation = sum([sub_pnl.sub_pnl_metrics[0].automation_coverage_percent if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics]) / max(sub_pnl_count, 1)
+        
+        # Get or create PnL metrics
+        pnl_metrics = db.query(models.PnLMetrics).filter(
+            models.PnLMetrics.pnl_id == pnl_id
+        ).first()
+        
+        if pnl_metrics:
+            # Update existing metrics
+            pnl_metrics.features_shipped = total_features
+            pnl_metrics.total_testcases_executed = total_testcases
+            pnl_metrics.total_bugs_logged = total_bugs
+            pnl_metrics.regression_bugs_found = total_regression_bugs
+            pnl_metrics.escaped_bugs = total_escaped_bugs
+            pnl_metrics.sanity_time_avg_hours = avg_sanity_time
+            pnl_metrics.automation_coverage_percent = avg_automation
+        else:
+            # Create new metrics
+            pnl_metrics = models.PnLMetrics(
+                pnl_id=pnl_id,
+                features_shipped=total_features,
+                total_testcases_executed=total_testcases,
+                total_bugs_logged=total_bugs,
+                regression_bugs_found=total_regression_bugs,
+                escaped_bugs=total_escaped_bugs,
+                sanity_time_avg_hours=avg_sanity_time,
+                automation_coverage_percent=avg_automation
+            )
+            db.add(pnl_metrics)
+        
+        db.commit()
+        return pnl_metrics
+    except Exception as e:
+        db.rollback()
+        raise e
+
 @app.get("/")
 def root():
     return {"message": "QAlytics API v2.0 - Hierarchical PnL Quality Analytics Platform"}
@@ -121,23 +175,60 @@ def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
         "user": user
     }
 
-# Dashboard endpoint - PnL list with sub-PnL counts
-@app.get("/dashboard", response_model=List[schemas.PnLWithSubPnLs])
+# Dashboard endpoint - PnL list with sub-PnL counts and metrics
+@app.get("/dashboard", response_model=List[schemas.PnLWithMetrics])
 def get_dashboard(db: Session = Depends(get_db)):
-    """Dashboard showing PnLs with their sub-PnL counts"""
+    """Dashboard showing PnLs with their sub-PnL counts and aggregated metrics"""
     pnls = db.query(models.PnL).options(
-        joinedload(models.PnL.sub_pnls)
+        joinedload(models.PnL.sub_pnls),
+        joinedload(models.PnL.pnl_metrics)
     ).all()
     
     result = []
     for pnl in pnls:
-        result.append(schemas.PnLWithSubPnLs(
+        # Get or create metrics for this PnL (aggregated from Sub-PnLs)
+        metrics = pnl.pnl_metrics[0] if pnl.pnl_metrics else None
+        if not metrics:
+            # Calculate aggregate metrics from Sub-PnLs
+            sub_pnls_with_metrics = db.query(models.SubPnL).filter(
+                models.SubPnL.pnl_id == pnl.id
+            ).options(joinedload(models.SubPnL.sub_pnl_metrics)).all()
+            
+            # Aggregate metrics
+            total_features = sum([sub_pnl.sub_pnl_metrics[0].features_shipped if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+            total_testcases = sum([sub_pnl.sub_pnl_metrics[0].total_testcases_executed if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+            total_bugs = sum([sub_pnl.sub_pnl_metrics[0].total_bugs_logged if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+            total_regression_bugs = sum([sub_pnl.sub_pnl_metrics[0].regression_bugs_found if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+            total_escaped_bugs = sum([sub_pnl.sub_pnl_metrics[0].escaped_bugs if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+            
+            # Calculate averages
+            sub_pnl_count = len([sub_pnl for sub_pnl in sub_pnls_with_metrics if sub_pnl.sub_pnl_metrics])
+            avg_sanity_time = sum([sub_pnl.sub_pnl_metrics[0].sanity_time_avg_hours if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics]) / max(sub_pnl_count, 1)
+            avg_automation = sum([sub_pnl.sub_pnl_metrics[0].automation_coverage_percent if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics]) / max(sub_pnl_count, 1)
+            
+            # Create or update PnL metrics
+            metrics = models.PnLMetrics(
+                pnl_id=pnl.id,
+                features_shipped=total_features,
+                total_testcases_executed=total_testcases,
+                total_bugs_logged=total_bugs,
+                regression_bugs_found=total_regression_bugs,
+                escaped_bugs=total_escaped_bugs,
+                sanity_time_avg_hours=avg_sanity_time,
+                automation_coverage_percent=avg_automation
+            )
+            db.add(metrics)
+            db.commit()
+            db.refresh(metrics)
+        
+        result.append(schemas.PnLWithMetrics(
             id=pnl.id,
             name=pnl.name,
             description=pnl.description,
             created_at=pnl.created_at,
             updated_at=pnl.updated_at,
-            sub_pnls_count=len(pnl.sub_pnls)
+            sub_pnls_count=len(pnl.sub_pnls),
+            metrics=metrics
         ))
     
     return result
@@ -163,10 +254,120 @@ def get_pnl(pnl_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="PnL not found")
     return pnl
 
+# PnL Metrics endpoints
+@app.get("/pnls/{pnl_id}/metrics", response_model=schemas.PnLMetricsOut)
+def get_pnl_metrics(pnl_id: int, db: Session = Depends(get_db)):
+    """Get PnL metrics - aggregated from Sub-PnLs or manually set"""
+    pnl = db.query(models.PnL).filter(models.PnL.id == pnl_id).first()
+    if not pnl:
+        raise HTTPException(status_code=404, detail="PnL not found")
+    
+    metrics = db.query(models.PnLMetrics).filter(
+        models.PnLMetrics.pnl_id == pnl_id
+    ).first()
+    
+    if not metrics:
+        # Calculate aggregate metrics from Sub-PnLs
+        sub_pnls_with_metrics = db.query(models.SubPnL).filter(
+            models.SubPnL.pnl_id == pnl_id
+        ).options(joinedload(models.SubPnL.sub_pnl_metrics)).all()
+        
+        # Aggregate metrics
+        total_features = sum([sub_pnl.sub_pnl_metrics[0].features_shipped if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        total_testcases = sum([sub_pnl.sub_pnl_metrics[0].total_testcases_executed if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        total_bugs = sum([sub_pnl.sub_pnl_metrics[0].total_bugs_logged if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        total_regression_bugs = sum([sub_pnl.sub_pnl_metrics[0].regression_bugs_found if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        total_escaped_bugs = sum([sub_pnl.sub_pnl_metrics[0].escaped_bugs if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics])
+        
+        # Calculate averages
+        sub_pnl_count = len([sub_pnl for sub_pnl in sub_pnls_with_metrics if sub_pnl.sub_pnl_metrics])
+        avg_sanity_time = sum([sub_pnl.sub_pnl_metrics[0].sanity_time_avg_hours if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics]) / max(sub_pnl_count, 1)
+        avg_automation = sum([sub_pnl.sub_pnl_metrics[0].automation_coverage_percent if sub_pnl.sub_pnl_metrics else 0 for sub_pnl in sub_pnls_with_metrics]) / max(sub_pnl_count, 1)
+        
+        # Create default metrics if none exist
+        metrics = models.PnLMetrics(
+            pnl_id=pnl_id,
+            features_shipped=total_features,
+            total_testcases_executed=total_testcases,
+            total_bugs_logged=total_bugs,
+            regression_bugs_found=total_regression_bugs,
+            escaped_bugs=total_escaped_bugs,
+            sanity_time_avg_hours=avg_sanity_time,
+            automation_coverage_percent=avg_automation
+        )
+        db.add(metrics)
+        db.commit()
+        db.refresh(metrics)
+    
+    return metrics
+
+@app.put("/pnls/{pnl_id}/metrics", response_model=schemas.PnLMetricsOut)
+def update_pnl_metrics(
+    pnl_id: int, 
+    metrics_data: schemas.PnLMetricsUpdate, 
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update PnL metrics manually"""
+    # Verify PnL exists
+    pnl = db.query(models.PnL).filter(models.PnL.id == pnl_id).first()
+    if not pnl:
+        raise HTTPException(status_code=404, detail="PnL not found")
+    
+    # Update or create metrics
+    existing_metrics = db.query(models.PnLMetrics).filter(
+        models.PnLMetrics.pnl_id == pnl_id
+    ).first()
+    
+    if existing_metrics:
+        # Capture previous values for history
+        previous_values = {
+            key: getattr(existing_metrics, key) 
+            for key in metrics_data.dict().keys()
+        }
+        
+        for key, value in metrics_data.dict().items():
+            setattr(existing_metrics, key, value)
+        
+        # Create history record
+        create_metrics_history(
+            db=db,
+            entity_type="pnl",
+            entity_id=pnl_id,
+            metrics_data=metrics_data.dict(),
+            change_type="update",
+            user_id=current_user.id,
+            description=f"Updated metrics for {pnl.name}",
+            previous_values=previous_values
+        )
+        
+        db.commit()
+        db.refresh(existing_metrics)
+        return existing_metrics
+    else:
+        new_metrics = models.PnLMetrics(pnl_id=pnl_id, **metrics_data.dict())
+        db.add(new_metrics)
+        db.flush()  # Get the ID before history
+        
+        # Create history record
+        create_metrics_history(
+            db=db,
+            entity_type="pnl",
+            entity_id=pnl_id,
+            metrics_data=metrics_data.dict(),
+            change_type="create",
+            user_id=current_user.id,
+            description=f"Created metrics for {pnl.name}"
+        )
+        
+        db.commit()
+        db.refresh(new_metrics)
+        return new_metrics
+
 # Sub PnL endpoints  
-@app.get("/pnls/{pnl_id}/sub-pnls", response_model=List[schemas.SubPnLWithMetrics])
+@app.get("/pnls/{pnl_id}/sub-pnls", response_model=List[schemas.SubPnLWithDetailMetrics])
 def list_sub_pnls(pnl_id: int, db: Session = Depends(get_db)):
-    """List Sub PnLs under a PnL with their metrics"""
+    """List Sub PnLs under a PnL with their detailed metrics"""
     # Verify PnL exists
     pnl = db.query(models.PnL).filter(models.PnL.id == pnl_id).first()
     if not pnl:
@@ -174,26 +375,26 @@ def list_sub_pnls(pnl_id: int, db: Session = Depends(get_db)):
     
     sub_pnls = db.query(models.SubPnL).filter(
         models.SubPnL.pnl_id == pnl_id
-    ).options(joinedload(models.SubPnL.sub_pnl_metrics)).all()
+    ).options(joinedload(models.SubPnL.sub_pnl_detail_metrics)).all()
     
     result = []
     for sub_pnl in sub_pnls:
-        # Get or create metrics for this sub PnL
-        metrics = sub_pnl.sub_pnl_metrics[0] if sub_pnl.sub_pnl_metrics else None
-        if not metrics:
-            metrics = models.SubPnLMetrics(sub_pnl_id=sub_pnl.id)
-            db.add(metrics)
+        # Get or create detail metrics for this sub PnL
+        detail_metrics = sub_pnl.sub_pnl_detail_metrics[0] if sub_pnl.sub_pnl_detail_metrics else None
+        if not detail_metrics:
+            detail_metrics = models.SubPnLDetailMetrics(sub_pnl_id=sub_pnl.id)
+            db.add(detail_metrics)
             db.commit()
-            db.refresh(metrics)
+            db.refresh(detail_metrics)
         
-        result.append(schemas.SubPnLWithMetrics(
+        result.append(schemas.SubPnLWithDetailMetrics(
             id=sub_pnl.id,
             name=sub_pnl.name,
             description=sub_pnl.description,
             pnl_id=sub_pnl.pnl_id,
             created_at=sub_pnl.created_at,
             updated_at=sub_pnl.updated_at,
-            metrics=metrics
+            detail_metrics=detail_metrics
         ))
     
     return result
@@ -306,6 +507,10 @@ def update_sub_pnl_metrics(
         
         db.commit()
         db.refresh(existing_metrics)
+        
+        # Update parent PnL aggregated metrics
+        update_pnl_aggregated_metrics(db, sub_pnl.pnl_id)
+        
         return existing_metrics
     else:
         new_metrics = models.SubPnLMetrics(sub_pnl_id=sub_pnl_id, **metrics_data.dict())
@@ -324,6 +529,10 @@ def update_sub_pnl_metrics(
         
         db.commit()
         db.refresh(new_metrics)
+        
+        # Update parent PnL aggregated metrics
+        update_pnl_aggregated_metrics(db, sub_pnl.pnl_id)
+        
         return new_metrics
 
 # Sub PnL Detail Metrics endpoints

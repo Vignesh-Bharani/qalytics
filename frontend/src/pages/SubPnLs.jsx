@@ -138,7 +138,7 @@ const SubPnLs = () => {
                     <div className="flex items-center space-x-2">
                       <Package className="h-4 w-4 text-blue-600" />
                       <div className="text-lg font-bold text-blue-700">
-                        {subPnl.metrics?.features_shipped || 0}
+                        {subPnl.detail_metrics?.features_shipped || 0}
                       </div>
                     </div>
                     <div className="text-xs text-blue-600">Features Shipped</div>
@@ -148,7 +148,7 @@ const SubPnLs = () => {
                     <div className="flex items-center space-x-2">
                       <TestTube className="h-4 w-4 text-green-600" />
                       <div className="text-lg font-bold text-green-700">
-                        {subPnl.metrics?.total_testcases_executed || 0}
+                        {subPnl.detail_metrics?.total_testcases_executed || 0}
                       </div>
                     </div>
                     <div className="text-xs text-green-600">Total Testcases Executed</div>
@@ -158,7 +158,7 @@ const SubPnLs = () => {
                     <div className="flex items-center space-x-2">
                       <Bug className="h-4 w-4 text-yellow-600" />
                       <div className="text-lg font-bold text-yellow-700">
-                        {subPnl.metrics?.total_bugs_logged || 0}
+                        {subPnl.detail_metrics?.total_bugs_logged || 0}
                       </div>
                     </div>
                     <div className="text-xs text-yellow-600">Total Bugs Logged</div>
@@ -168,7 +168,7 @@ const SubPnLs = () => {
                     <div className="flex items-center space-x-2">
                       <AlertTriangle className="h-4 w-4 text-red-600" />
                       <div className="text-lg font-bold text-red-700">
-                        {subPnl.metrics?.regression_bugs_found || 0}
+                        {subPnl.detail_metrics?.regression_bugs_found || 0}
                       </div>
                     </div>
                     <div className="text-xs text-red-600">Regression Bugs Found</div>
@@ -181,7 +181,7 @@ const SubPnLs = () => {
                     <div className="flex items-center justify-center space-x-1">
                       <Clock className="h-3 w-3 text-gray-600" />
                       <div className="text-sm font-semibold text-gray-700">
-                        {subPnl.metrics?.sanity_time_avg_hours || 0}h
+                        {subPnl.detail_metrics?.sanity_time_avg_hours || 0}h
                       </div>
                     </div>
                     <div className="text-xs text-gray-500">Sanity Time Avg</div>
@@ -191,7 +191,7 @@ const SubPnLs = () => {
                     <div className="flex items-center justify-center space-x-1">
                       <TrendingUp className="h-3 w-3 text-gray-600" />
                       <div className="text-sm font-semibold text-gray-700">
-                        {subPnl.metrics?.automation_coverage_percent || 0}%
+                        {subPnl.detail_metrics?.automation_coverage_percent || 0}%
                       </div>
                     </div>
                     <div className="text-xs text-gray-500">Automation Coverage</div>
@@ -201,7 +201,7 @@ const SubPnLs = () => {
                     <div className="flex items-center justify-center space-x-1">
                       <AlertTriangle className="h-3 w-3 text-gray-600" />
                       <div className="text-sm font-semibold text-gray-700">
-                        {subPnl.metrics?.escaped_bugs || 0}
+                        {subPnl.detail_metrics?.escaped_bugs || 0}
                       </div>
                     </div>
                     <div className="text-xs text-gray-500">Escaped Bugs</div>

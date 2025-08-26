@@ -225,7 +225,7 @@ const SubPnLDetails = () => {
         </button>
         <ChevronRight className="h-4 w-4" />
         <button 
-          onClick={() => navigate(`/sub-pnls/${subPnl?.main_pnl_id}`)}
+          onClick={() => navigate(`/sub-pnls/${subPnl?.pnl_id}`)}
           className="hover:text-blue-600"
         >
           Sub-PnLs
@@ -242,7 +242,7 @@ const SubPnLDetails = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => navigate(`/sub-pnls/${subPnl?.main_pnl_id}`)}
+              onClick={() => navigate(`/sub-pnls/${subPnl?.pnl_id}`)}
               className="flex items-center space-x-1"
             >
               <ChevronLeft className="h-4 w-4" />

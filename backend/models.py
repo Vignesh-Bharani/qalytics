@@ -4,6 +4,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from database import Base
 
+# Ensure proper imports for relationships
+__all__ = ['User', 'PnL', 'PnLMetrics', 'SubPnL', 'SubPnLMetrics', 'SubPnLDetailMetrics', 'MetricsHistory']
+
 class User(Base):
     __tablename__ = "users"
     
@@ -24,6 +27,33 @@ class PnL(Base):
     
     # Relationships
     sub_pnls = relationship("SubPnL", back_populates="pnl", cascade="all, delete-orphan")
+    pnl_metrics = relationship("PnLMetrics", back_populates="pnl", cascade="all, delete-orphan")
+
+# PnL level metrics (aggregated from Sub-PnLs)
+class PnLMetrics(Base):
+    __tablename__ = "pnl_metrics"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    pnl_id = Column(Integer, ForeignKey("pnls.id", ondelete="CASCADE"), nullable=False)
+    features_shipped = Column(Integer, default=0)
+    total_testcases_executed = Column(Integer, default=0)
+    total_bugs_logged = Column(Integer, default=0)
+    testcase_peer_review = Column(Integer, default=0)
+    regression_bugs_found = Column(Integer, default=0)
+    sanity_time_avg_hours = Column(DECIMAL(5,2), default=0.0)
+    api_test_time_avg_hours = Column(DECIMAL(5,2), default=0.0)
+    automation_coverage_percent = Column(DECIMAL(5,2), default=0.0)
+    escaped_bugs = Column(Integer, default=0)
+    
+    # Calculated fields
+    test_coverage_percent = Column(DECIMAL(5,2), default=0.0)
+    testcases_per_bug = Column(DECIMAL(5,2), default=0.0)
+    bugs_per_100_tests = Column(DECIMAL(5,2), default=0.0)
+    
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    pnl = relationship("PnL", back_populates="pnl_metrics")
 
 class SubPnL(Base):
     __tablename__ = "sub_pnls"

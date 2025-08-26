@@ -83,11 +83,11 @@ cd frontend && npm run dev
 
 ### 🛑 Stopping the Application
 ```bash
-# For Docker Compose
-docker-compose down
+# Backend terminal
+cd backend && source venv/bin/activate && python init_db.py && python -m uvicorn app:app --reload
 
-# For manual setup
-# Press Ctrl+C in both terminal windows
+# Frontend terminal (new terminal)
+cd frontend && npm run dev
 ```
 
 ## 🏗️ Architecture
@@ -155,14 +155,9 @@ Sub-PnL → Detailed Metrics Page
    pip install -r requirements.txt
    ```
 
-4. **Initialize database**
+4. **Initialize database and create sample data**
    ```bash
    python init_db.py
-   ```
-
-5. **Create sample data**
-   ```bash
-   python create_sample_data.py
    ```
 
 6. **Start the backend server**

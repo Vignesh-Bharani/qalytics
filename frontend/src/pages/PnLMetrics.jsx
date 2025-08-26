@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { pnlAPI } from '../services/api';
 import { 
   ArrowLeft, 
   Edit3, 
@@ -37,6 +38,15 @@ const PnLMetrics = () => {
 
   const fetchMetrics = async () => {
     try {
+      setLoading(true);
+      const response = await pnlAPI.getMetrics(pnlId);
+      const metricsData = response.data;
+      
+      setMetrics(metricsData);
+      setFormData(metricsData);
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+      // Set default values on error
       const emptyMetrics = {
         features_shipped: 0,
         total_testcases_executed: 0,
@@ -51,9 +61,7 @@ const PnLMetrics = () => {
       };
       setMetrics(emptyMetrics);
       setFormData(emptyMetrics);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -69,8 +77,16 @@ const PnLMetrics = () => {
   };
 
   const handleSave = async () => {
-    setMetrics({ ...formData, updated_at: new Date().toISOString() });
-    setIsEditing(false);
+    try {
+      await pnlAPI.updateMetrics(pnlId, formData);
+      setMetrics({ ...formData, updated_at: new Date().toISOString() });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating metrics:', error);
+      // Still update local state even if API call fails
+      setMetrics({ ...formData, updated_at: new Date().toISOString() });
+      setIsEditing(false);
+    }
   };
 
   const handleInputChange = (field, value) => {

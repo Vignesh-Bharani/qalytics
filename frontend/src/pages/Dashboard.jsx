@@ -42,18 +42,22 @@ const Dashboard = () => {
       const response = await dashboardAPI.getDashboard();
       setPnls(response.data);
       
-      // Calculate KPIs
+      // Calculate KPIs from metrics data
       const data = response.data;
       const totalPnLs = data.length;
-      const totalTestCases = data.reduce((sum, pnl) => sum + (pnl.metrics?.total_testcases || 0), 0);
-      const totalLowerEnvBugs = data.reduce((sum, pnl) => sum + (pnl.metrics?.lower_env_bugs || 0), 0);
-      const totalProdBugs = data.reduce((sum, pnl) => sum + (pnl.metrics?.prod_bugs || 0), 0);
-      const totalBugs = totalLowerEnvBugs + totalProdBugs;
+      const totalTestCases = data.reduce((sum, pnl) => sum + (pnl.metrics?.total_testcases_executed || 0), 0);
+      const totalBugsLogged = data.reduce((sum, pnl) => sum + (pnl.metrics?.total_bugs_logged || 0), 0);
+      const totalRegressionBugs = data.reduce((sum, pnl) => sum + (pnl.metrics?.regression_bugs_found || 0), 0);
+      const totalEscapedBugs = data.reduce((sum, pnl) => sum + (pnl.metrics?.escaped_bugs || 0), 0);
+      const totalBugs = totalBugsLogged + totalEscapedBugs;
       
-      const averageCoverage = totalPnLs > 0 ? 
-        data.reduce((sum, pnl) => sum + (pnl.metrics?.test_coverage_percent || 0), 0) / totalPnLs : 0;
+      // Calculate averages from actual metrics
       const averageAutomation = totalPnLs > 0 ? 
-        data.reduce((sum, pnl) => sum + (pnl.metrics?.automation_percent || 0), 0) / totalPnLs : 0;
+        data.reduce((sum, pnl) => sum + (pnl.metrics?.automation_coverage_percent || 0), 0) / totalPnLs : 0;
+      
+      // Calculate test coverage based on bugs found vs escaped
+      const averageCoverage = totalBugs > 0 ? 
+        ((totalBugsLogged / totalBugs) * 100) : 0;
       
       const testCasesPerBug = totalBugs > 0 ? totalTestCases / totalBugs : 0;
       const bugsPerHundredTests = totalTestCases > 0 ? (totalBugs / totalTestCases) * 100 : 0;
@@ -63,8 +67,8 @@ const Dashboard = () => {
         totalTestCases,
         averageCoverage: Math.round(averageCoverage * 10) / 10,
         averageAutomation: Math.round(averageAutomation * 10) / 10,
-        totalLowerEnvBugs,
-        totalProdBugs,
+        totalLowerEnvBugs: totalBugsLogged,
+        totalProdBugs: totalEscapedBugs,
         testCasesPerBug: Math.round(testCasesPerBug * 10) / 10,
         bugsPerHundredTests: Math.round(bugsPerHundredTests * 100) / 100
       });

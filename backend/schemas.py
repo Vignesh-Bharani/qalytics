@@ -61,6 +61,32 @@ class SubPnLOut(SubPnLBase):
         from_attributes = True
 
 
+# PnL Metrics schemas  
+class PnLMetricsBase(BaseModel):
+    features_shipped: int = 0
+    total_testcases_executed: int = 0
+    total_bugs_logged: int = 0
+    testcase_peer_review: int = 0
+    regression_bugs_found: int = 0
+    sanity_time_avg_hours: float = 0.0
+    api_test_time_avg_hours: float = 0.0
+    automation_coverage_percent: float = 0.0
+    escaped_bugs: int = 0
+
+class PnLMetricsCreate(PnLMetricsBase):
+    pass
+
+class PnLMetricsUpdate(PnLMetricsBase):
+    pass
+
+class PnLMetricsOut(PnLMetricsBase):
+    id: int
+    pnl_id: int
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 # Sub PnL Metrics schemas
 class SubPnLMetricsBase(BaseModel):
     features_shipped: int = 0
@@ -119,6 +145,18 @@ class PnLWithSubPnLs(BaseModel):
     created_at: datetime
     updated_at: datetime
     sub_pnls_count: int = 0
+    
+    class Config:
+        from_attributes = True
+
+class PnLWithMetrics(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    sub_pnls_count: int = 0
+    metrics: Optional[PnLMetricsOut] = None
     
     class Config:
         from_attributes = True
