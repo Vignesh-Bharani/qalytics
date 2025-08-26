@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { pnlAPI } from '../services/api';
+import { pnlAPI, dashboardAPI } from '../services/api';
 import { Building2, Plus, TrendingUp, Bug, TestTube, Percent, ChevronRight } from 'lucide-react';
 
 const PnLs = () => {
@@ -23,7 +23,8 @@ const PnLs = () => {
 
   const fetchPnls = async () => {
     try {
-      const response = await pnlAPI.getAll();
+      // Use dashboard API to get PnLs with metrics data
+      const response = await dashboardAPI.getDashboard();
       setPnls(response.data);
     } catch (error) {
       console.error('Error fetching PnLs:', error);
@@ -172,16 +173,16 @@ const PnLs = () => {
                     <span className="text-xs font-medium">Test Cases</span>
                   </div>
                   <p className="text-lg font-bold text-gray-900">
-                    {pnl.metrics?.total_testcases || 0}
+                    {pnl.metrics?.escaped_bugs || 0}
                   </p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
                     <Percent className="w-4 h-4" />
-                    <span className="text-xs font-medium">Coverage</span>
+                    <span className="text-xs font-medium">Bugs Found</span>
                   </div>
                   <p className="text-lg font-bold text-gray-900">
-                    {pnl.metrics?.test_coverage_percent || 0}%
+                    {pnl.metrics?.total_bugs_logged || 0}
                   </p>
                 </div>
                 <div className="text-center">
@@ -190,7 +191,7 @@ const PnLs = () => {
                     <span className="text-xs font-medium">Automation</span>
                   </div>
                   <p className="text-lg font-bold text-gray-900">
-                    {pnl.metrics?.automation_percent || 0}%
+                    {pnl.metrics?.automation_coverage_percent || 0}%
                   </p>
                 </div>
                 <div className="text-center">
