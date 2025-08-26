@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { subPnlAPI } from '../services/api';
+import api from '../services/api';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,7 +19,10 @@ import {
   AlertTriangle,
   CheckCircle,
   FileText,
-  History
+  History,
+  Calendar,
+  User,
+  Tag
 } from 'lucide-react';
 
 const SubPnLDetails = () => {
@@ -30,10 +34,13 @@ const SubPnLDetails = () => {
   const [editing, setEditing] = useState(false);
   const [editingMetrics, setEditingMetrics] = useState({});
   const [saving, setSaving] = useState(false);
+  const [metricsHistory, setMetricsHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (subPnlId) {
       fetchSubPnLDetails();
+      fetchMetricsHistory();
     }
   }, [subPnlId]);
 
@@ -50,6 +57,18 @@ const SubPnLDetails = () => {
       console.error('Sub-PnL details error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMetricsHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      const response = await api.get(`/sub-pnls/${subPnlId}/metrics-history`);
+      setMetricsHistory(response.data);
+    } catch (err) {
+      console.error('Failed to fetch metrics history:', err);
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -70,6 +89,7 @@ const SubPnLDetails = () => {
       await subPnlAPI.updateDetailMetrics(subPnlId, editingMetrics);
       setEditing(false);
       await fetchSubPnLDetails(); // Refresh data
+      await fetchMetricsHistory(); // Refresh history after save
     } catch (err) {
       console.error('Failed to save metrics:', err);
       alert('Failed to save metrics. Please try again.');
@@ -83,6 +103,41 @@ const SubPnLDetails = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const formatMetricName = (key) => {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const parseMetricsData = (jsonString) => {
+    try {
+      return JSON.parse(jsonString);
+    } catch {
+      return {};
+    }
+  };
+
+  const getChangeTypeColor = (changeType) => {
+    switch (changeType) {
+      case 'create':
+        return 'bg-green-100 text-green-800';
+      case 'update':
+        return 'bg-blue-100 text-blue-800';
+      case 'delete':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   if (loading) {
@@ -196,7 +251,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-blue-50 border-blue-200">
           <div className="flex items-center space-x-2 mb-3">
             <Package className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-blue-900">✅ Features Shipped</h3>
+            <h3 className="font-semibold text-blue-900">Features Shipped</h3>
           </div>
           {editing ? (
             <Input
@@ -214,7 +269,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-green-50 border-green-200">
           <div className="flex items-center space-x-2 mb-3">
             <TestTube className="h-5 w-5 text-green-600" />
-            <h3 className="font-semibold text-green-900">✅ Total Testcases Executed</h3>
+            <h3 className="font-semibold text-green-900">Total Testcases Executed</h3>
           </div>
           {editing ? (
             <Input
@@ -232,7 +287,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-yellow-50 border-yellow-200">
           <div className="flex items-center space-x-2 mb-3">
             <Bug className="h-5 w-5 text-yellow-600" />
-            <h3 className="font-semibold text-yellow-900">✅ Total Bugs Logged</h3>
+            <h3 className="font-semibold text-yellow-900">Total Bugs Logged</h3>
           </div>
           {editing ? (
             <Input
@@ -250,7 +305,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-purple-50 border-purple-200">
           <div className="flex items-center space-x-2 mb-3">
             <CheckCircle className="h-5 w-5 text-purple-600" />
-            <h3 className="font-semibold text-purple-900">✅ Testcase Peer Review</h3>
+            <h3 className="font-semibold text-purple-900">Testcase Peer Review</h3>
           </div>
           {editing ? (
             <Input
@@ -268,7 +323,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-red-50 border-red-200">
           <div className="flex items-center space-x-2 mb-3">
             <AlertTriangle className="h-5 w-5 text-red-600" />
-            <h3 className="font-semibold text-red-900">✅ Regression Bugs Found</h3>
+            <h3 className="font-semibold text-red-900">Regression Bugs Found</h3>
           </div>
           {editing ? (
             <Input
@@ -286,7 +341,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-indigo-50 border-indigo-200">
           <div className="flex items-center space-x-2 mb-3">
             <Clock className="h-5 w-5 text-indigo-600" />
-            <h3 className="font-semibold text-indigo-900">✅ Sanity Time Avg (hrs)</h3>
+            <h3 className="font-semibold text-indigo-900">Sanity Time Avg (hrs)</h3>
           </div>
           {editing ? (
             <Input
@@ -305,7 +360,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-cyan-50 border-cyan-200">
           <div className="flex items-center space-x-2 mb-3">
             <Clock className="h-5 w-5 text-cyan-600" />
-            <h3 className="font-semibold text-cyan-900">✅ API Test Time Avg (hrs)</h3>
+            <h3 className="font-semibold text-cyan-900">API Test Time Avg (hrs)</h3>
           </div>
           {editing ? (
             <Input
@@ -324,7 +379,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-emerald-50 border-emerald-200">
           <div className="flex items-center space-x-2 mb-3">
             <TrendingUp className="h-5 w-5 text-emerald-600" />
-            <h3 className="font-semibold text-emerald-900">✅ Automation Coverage %</h3>
+            <h3 className="font-semibold text-emerald-900">Automation Coverage %</h3>
           </div>
           {editing ? (
             <Input
@@ -343,7 +398,7 @@ const SubPnLDetails = () => {
         <Card className="p-6 bg-rose-50 border-rose-200">
           <div className="flex items-center space-x-2 mb-3">
             <AlertTriangle className="h-5 w-5 text-rose-600" />
-            <h3 className="font-semibold text-rose-900">✅ Escaped Bugs (in Prod)</h3>
+            <h3 className="font-semibold text-rose-900">Escaped Bugs (in Prod)</h3>
           </div>
           {editing ? (
             <Input
@@ -366,6 +421,110 @@ const SubPnLDetails = () => {
             Last updated: {metrics.updated_at ? new Date(metrics.updated_at).toLocaleString() : 'Never'}
           </span>
         </div>
+      </Card>
+
+      {/* Metrics History Table */}
+      <Card className="p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <History className="h-6 w-6 text-blue-600" />
+          <h2 className="text-xl font-bold text-gray-900">Metrics History</h2>
+          {historyLoading && (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          )}
+        </div>
+
+        {metricsHistory.length === 0 ? (
+          <div className="text-center py-8">
+            <History className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No metrics history found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              No changes have been recorded for this Sub-PnL yet.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Change Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date & Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Changed By
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Key Metrics
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {metricsHistory.map((historyItem, index) => {
+                  const metricsData = parseMetricsData(historyItem.metrics_data);
+                  const isLatest = index === 0;
+                  
+                  return (
+                    <tr key={historyItem.id} className={isLatest ? "bg-blue-50" : "hover:bg-gray-50"}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getChangeTypeColor(
+                            historyItem.change_type
+                          )}`}
+                        >
+                          {historyItem.change_type.toUpperCase()}
+                        </span>
+                      </td>
+                      
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <span>{formatDate(historyItem.created_at)}</span>
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center space-x-1">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <span>{historyItem.user?.email || 'System'}</span>
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 space-y-1">
+                          {Object.entries(metricsData).slice(0, 3).map(([key, value]) => (
+                            <div key={key} className="flex justify-between">
+                              <span className="font-medium">{formatMetricName(key)}:</span>
+                              <span className="ml-2">{value}{key.includes('percent') ? '%' : key.includes('hours') ? 'h' : ''}</span>
+                            </div>
+                          ))}
+                          {Object.entries(metricsData).length > 3 && (
+                            <div className="text-xs text-gray-500">
+                              +{Object.entries(metricsData).length - 3} more metrics
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {isLatest && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <Tag className="h-3 w-3 mr-1" />
+                            Latest
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {/* Navigation Flow Info */}

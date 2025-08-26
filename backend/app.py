@@ -422,22 +422,57 @@ def update_sub_pnl_detail_metrics(
     if not sub_pnl:
         raise HTTPException(status_code=404, detail="Sub PnL not found")
     
-    # Update or create detail metrics
+    # Get existing metrics for history tracking
     existing_metrics = db.query(models.SubPnLDetailMetrics).filter(
         models.SubPnLDetailMetrics.sub_pnl_id == sub_pnl_id
     ).first()
     
+    # Prepare new metrics data
+    new_data = metrics_data.dict()
+    
     if existing_metrics:
-        for key, value in metrics_data.dict().items():
+        # Store previous values for history
+        previous_values = {
+            key: getattr(existing_metrics, key) 
+            for key in new_data.keys() 
+            if hasattr(existing_metrics, key)
+        }
+        
+        # Update existing metrics
+        for key, value in new_data.items():
             setattr(existing_metrics, key, value)
         db.commit()
         db.refresh(existing_metrics)
+        
+        # Create history record
+        create_metrics_history(
+            db=db,
+            entity_type="sub_pnl_detail",
+            entity_id=sub_pnl_id,
+            metrics_data=new_data,
+            change_type="update",
+            description=f"Updated detailed metrics for {sub_pnl.name}",
+            previous_values=previous_values
+        )
+        
         return existing_metrics
     else:
-        new_metrics = models.SubPnLDetailMetrics(sub_pnl_id=sub_pnl_id, **metrics_data.dict())
+        # Create new metrics
+        new_metrics = models.SubPnLDetailMetrics(sub_pnl_id=sub_pnl_id, **new_data)
         db.add(new_metrics)
         db.commit()
         db.refresh(new_metrics)
+        
+        # Create history record
+        create_metrics_history(
+            db=db,
+            entity_type="sub_pnl_detail",
+            entity_id=sub_pnl_id,
+            metrics_data=new_data,
+            change_type="create",
+            description=f"Created detailed metrics for {sub_pnl.name}"
+        )
+        
         return new_metrics
 
 # Metrics History endpoints

@@ -141,7 +141,7 @@ const SubPnLs = () => {
                         {subPnl.metrics?.features_shipped || 0}
                       </div>
                     </div>
-                    <div className="text-xs text-blue-600">✅ Features Shipped</div>
+                    <div className="text-xs text-blue-600">Features Shipped</div>
                   </div>
                   
                   <div className="bg-green-50 p-3 rounded-lg">
@@ -151,7 +151,7 @@ const SubPnLs = () => {
                         {subPnl.metrics?.total_testcases_executed || 0}
                       </div>
                     </div>
-                    <div className="text-xs text-green-600">✅ Total Testcases Executed</div>
+                    <div className="text-xs text-green-600">Total Testcases Executed</div>
                   </div>
                   
                   <div className="bg-yellow-50 p-3 rounded-lg">
@@ -161,7 +161,7 @@ const SubPnLs = () => {
                         {subPnl.metrics?.total_bugs_logged || 0}
                       </div>
                     </div>
-                    <div className="text-xs text-yellow-600">✅ Total Bugs Logged</div>
+                    <div className="text-xs text-yellow-600">Total Bugs Logged</div>
                   </div>
                   
                   <div className="bg-red-50 p-3 rounded-lg">
@@ -171,7 +171,7 @@ const SubPnLs = () => {
                         {subPnl.metrics?.regression_bugs_found || 0}
                       </div>
                     </div>
-                    <div className="text-xs text-red-600">✅ Regression Bugs Found</div>
+                    <div className="text-xs text-red-600">Regression Bugs Found</div>
                   </div>
                 </div>
                 
@@ -184,7 +184,7 @@ const SubPnLs = () => {
                         {subPnl.metrics?.sanity_time_avg_hours || 0}h
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500">✅ Sanity Time Avg</div>
+                    <div className="text-xs text-gray-500">Sanity Time Avg</div>
                   </div>
                   
                   <div className="text-center bg-gray-50 p-2 rounded">
@@ -194,7 +194,7 @@ const SubPnLs = () => {
                         {subPnl.metrics?.automation_coverage_percent || 0}%
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500">✅ Automation Coverage</div>
+                    <div className="text-xs text-gray-500">Automation Coverage</div>
                   </div>
                   
                   <div className="text-center bg-gray-50 p-2 rounded">
@@ -204,7 +204,7 @@ const SubPnLs = () => {
                         {subPnl.metrics?.escaped_bugs || 0}
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500">✅ Escaped Bugs</div>
+                    <div className="text-xs text-gray-500">Escaped Bugs</div>
                   </div>
                 </div>
                 
